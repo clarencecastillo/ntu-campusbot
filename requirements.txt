@@ -1,0 +1,4 @@
+flask
+telepot
+gunicorn
+bs4
