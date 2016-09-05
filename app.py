@@ -13,7 +13,7 @@ except ImportError:
 
 BASE_IMAGE_URL = "https://webcam.ntu.edu.sg/upload/slider/"
 NEWS_HUB_URL = "http://news.ntu.edu.sg/Pages/NewsSummary.aspx?Category=news+releases"
-TOKEN = os.environ('BOT_TOKEN')
+TOKEN = os.environ['BOT_TOKEN']
 VERSION = "1.0.0"
 NEWS_COUNT = 5
 
