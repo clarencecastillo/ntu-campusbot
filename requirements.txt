@@ -1,4 +1,4 @@
 flask
 telepot
 gunicorn
-bs4
+beautifulsoup4
