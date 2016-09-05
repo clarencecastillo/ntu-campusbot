@@ -131,5 +131,5 @@ def pass_update():
     UPDATE_QUEUE.put(request.data)  # pass update to bot
     return 'OK'
 
-BOT.setWebhook() # unset if was set previously
-BOT.setWebhook(BOT_URL + BOT_SECRET)
+bot.setWebhook() # unset if was set previously
+bot.setWebhook(BOT_URL + BOT_SECRET)
