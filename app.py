@@ -126,6 +126,8 @@ bot.message_loop({
     'callback_query': on_callback_query
 }, source = UPDATE_QUEUE)
 
+print('NTU_CampusBot is now listening...)
+
 @app.route(BOT_SECRET, methods=['GET', 'POST'])
 def pass_update():
     UPDATE_QUEUE.put(request.data)  # pass update to bot
