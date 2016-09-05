@@ -135,3 +135,6 @@ def pass_update():
 
 bot.setWebhook() # unset if was set previously
 bot.setWebhook(BOT_URL + BOT_SECRET)
+
+while True:
+    time.sleep(10)
