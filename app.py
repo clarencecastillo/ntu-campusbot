@@ -118,7 +118,7 @@ app = Flask(__name__)
 
 UPDATE_QUEUE = Queue()
 BOT_SECRET = '/bot' + TOKEN
-BOT_URL = "http://telegram.me/NTU_CampusBot"
+BOT_URL = "https://telegram.me/NTU_CampusBot"
 
 bot = telepot.Bot(TOKEN)
 bot.message_loop({
