@@ -112,8 +112,10 @@ bot.message_loop({
     'chat': on_chat_message,
     'callback_query': on_callback_query
 })
+bot.setWebhook()
 
 print('NTU_CampusBot is now listening...')
+
 
 while True:
     time.sleep(10)
