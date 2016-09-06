@@ -68,13 +68,13 @@ def on_chat_message(message):
 
     print("Message received:", command)
 
-    if command == "start":
+    if command.startswith("start"):
         bot.sendMessage(chat_id, START_MESSAGE, parse_mode='HTML')
-    elif command == "peek":
+    elif command.startswith("peek"):
         buttons = [[InlineKeyboardButton(text = key, callback_data = key)] for key in LOCATIONS.keys()]
         keyboard = InlineKeyboardMarkup(inline_keyboard = buttons)
         bot.sendMessage(chat_id, PEEK_MESSAGE, reply_markup = keyboard)
-    elif command == "news":
+    elif command.startswith("news"):
         bot.sendMessage(chat_id, NEWS_LOAD_MESSAGE)
         news_page = urllib.request.urlopen(NEWS_HUB_URL).read()
         soup = BeautifulSoup(news_page, "html.parser")
@@ -89,9 +89,9 @@ def on_chat_message(message):
             bot.sendMessage(chat_id, news_message, parse_mode='HTML')
 
             next_news = next_news.find_next_sibling("div", {"class": "ntu_news_summary_title"})
-    elif command == "help":
+    elif command.startswith("help"):
         bot.sendMessage(chat_id, HELP_MESSAGE, parse_mode='HTML')
-    elif command == "about":
+    elif command.startswith("about"):
         bot.sendMessage(chat_id, ABOUT_MESSAGE, parse_mode='HTML')
 
 def on_callback_query(message):
@@ -115,7 +115,6 @@ bot.message_loop({
 bot.setWebhook()
 
 print('NTU_CampusBot is now listening...')
-
 
 while True:
     time.sleep(10)
