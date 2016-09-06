@@ -1,15 +1,9 @@
 from bs4 import BeautifulSoup
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
-from flask import Flask, request
 import telepot
 import time
 import urllib.request
 import os
-
-try:
-    from Queue import Queue
-except ImportError:
-    from queue import Queue
 
 BASE_IMAGE_URL = "https://webcam.ntu.edu.sg/upload/slider/"
 NEWS_HUB_URL = "http://news.ntu.edu.sg/Pages/NewsSummary.aspx?Category=news+releases"
@@ -113,28 +107,13 @@ def on_callback_query(message):
     bot.sendMessage(chat_id, timestamp_message, parse_mode='HTML')
     bot.sendPhoto(chat_id, cam_url)
 
-
-app = Flask(__name__)
-
-UPDATE_QUEUE = Queue()
-BOT_SECRET = '/bot' + TOKEN
-BOT_URL = "https://telegram.me/NTU_CampusBot"
-
 bot = telepot.Bot(TOKEN)
 bot.message_loop({
     'chat': on_chat_message,
     'callback_query': on_callback_query
-}, source = UPDATE_QUEUE)
+})
 
 print('NTU_CampusBot is now listening...')
-
-@app.route(BOT_SECRET, methods=['GET', 'POST'])
-def pass_update():
-    UPDATE_QUEUE.put(request.data)  # pass update to bot
-    return 'OK'
-
-bot.setWebhook() # unset if was set previously
-bot.setWebhook(BOT_URL + BOT_SECRET)
 
 while True:
     time.sleep(10)
