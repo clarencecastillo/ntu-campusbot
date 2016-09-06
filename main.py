@@ -38,8 +38,8 @@ areas around the campus so you can effectively plan your stay.
 <b>DISCLAIMER</b>
 <code>This bot is for informational purposes only. Use of NTU surveillance is \
 governed by the university and may be subject to change without prior notice. \
-If you find a bug, or notice that NTU_CampusBot is not working, please send a bug \
-report to clarencecastillo@outlook.com.</code>
+If you find a bug, or notice that NTU_CampusBot is not working, please file a \
+New Issue on Github.</code> [<a href='%s'>link</a>]
 
 <b>NOTES</b>
 <code>Timestamp shown of the snapshot image may not accurately reflect the camera's \
@@ -47,7 +47,7 @@ view at the time of request. You may notice a slight desynchronization due to \
 the fixed refresh rate of the cameras.</code>
 
 To check available commands, use /help
-'''
+''' % ("https://github.com/clarencecastillo/ntu-campusbot")
 
 ABOUT_MESSAGE = '''
 ====================
