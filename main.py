@@ -69,7 +69,7 @@ def on_chat_message(message):
     print("Message received:", command)
 
     if command.startswith("start"):
-        bot.sendMessage(chat_id, START_MESSAGE, parse_mode='HTML')
+        bot.sendMessage(chat_id, START_MESSAGE, parse_mode = 'HTML', disable_web_page_preview = True)
     elif command.startswith("peek"):
         buttons = [[InlineKeyboardButton(text = key, callback_data = key)] for key in LOCATIONS.keys()]
         keyboard = InlineKeyboardMarkup(inline_keyboard = buttons)
@@ -86,13 +86,13 @@ def on_chat_message(message):
             news_date = next_news.next_sibling.string
 
             news_message = "<b>%s</b>\n<a href='%s'>%s</a>" % (news_date, news_link, news_title)
-            bot.sendMessage(chat_id, news_message, parse_mode='HTML')
+            bot.sendMessage(chat_id, news_message, parse_mode = 'HTML')
 
             next_news = next_news.find_next_sibling("div", {"class": "ntu_news_summary_title"})
     elif command.startswith("help"):
-        bot.sendMessage(chat_id, HELP_MESSAGE, parse_mode='HTML')
+        bot.sendMessage(chat_id, HELP_MESSAGE, parse_mode = 'HTML')
     elif command.startswith("about"):
-        bot.sendMessage(chat_id, ABOUT_MESSAGE, parse_mode='HTML')
+        bot.sendMessage(chat_id, ABOUT_MESSAGE, parse_mode = 'HTML')
 
 def on_callback_query(message):
 
