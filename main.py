@@ -4,7 +4,6 @@ import telepot
 import time
 import urllib.request
 import os
-import random
 
 BASE_IMAGE_URL = "https://webcam.ntu.edu.sg/upload/slider/"
 NEWS_HUB_URL = "http://news.ntu.edu.sg/Pages/NewsSummary.aspx?Category=news+releases"
@@ -57,7 +56,7 @@ ABOUT_MESSAGE = '''
 
 Made with %s by:
 <b>%s</b>
-''' % (VERSION, u'\U00002764', "\n".join(random.shuffle(['Clarence', 'Beiyi', 'Yuxin', 'Joel', 'Qixuan'])))
+''' % (VERSION, u'\U00002764', "\n".join(['Clarence', 'Beiyi', 'Yuxin', 'Joel', 'Qixuan']))
 
 PEEK_MESSAGE = "Choose a location to look at:"
 NEWS_LOAD_MESSAGE = "Fetching latest news. Please wait."
