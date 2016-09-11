@@ -1,2 +1,3 @@
 telepot
 beautifulsoup4
+tweepy
