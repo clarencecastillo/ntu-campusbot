@@ -7,34 +7,28 @@ import aiohttp
 import random
 import asyncio
 import commons
+import urllib.request
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 AUTHORS = ['Clarence', 'Beiyi', 'Yuxin', 'Joel', 'Qixuan']
 
 REPO_URL = "https://github.com/clarencecastillo/ntu-campusbot"
 CAM_BASE_IMAGE_URL = "https://webcam.ntu.edu.sg/upload/slider/"
+NTU_WEBSITE = "http://www.ntu.edu.sg/"
+SHUTTLE_BUS_URL = "has/Transportation/Pages/GettingAroundNTU.aspx"
 NEWS_HUB_URL = "http://news.ntu.edu.sg/Pages/NewsSummary.aspx?Category=news+releases"
 NEWS_COUNT = 5
-NEWS_TIMEOUT = 60
-
-LOCATIONS = {
-    "Fastfood Level, Admin Cluster": "fastfood",
-    "School of Art, Design and Media": "adm",
-    "Lee Wee Nam Library": "lwn-inside",
-    "Quad": "quad",
-    "Walkway between North and South Spines": "WalkwaybetweenNorthAndSouthSpines",
-    "Canteen B": "canteenB",
-    "Onestop@SAC": "onestop_sac"
-}
+HTTP_REQUEST = 60
 
 HELP_MESSAGE = '''
 You can control this bot by sending these commands:
 
 /peek - get current screenshot of a location
 /news - get latest news from NTU News Hub
-/about - get info about this bot
 /subscribe - subscribe to NTU's official twitter account feed
 /unsubscribe - unsubscribe from NTU's official twitter account feed
+/shuttle - get info about NTU internal shuttle bus routes
+/about - get info about this bot
 '''
 
 START_MESSAGE = '''
@@ -66,7 +60,8 @@ Made with %s by:
 <b>%s</b>
 '''
 
-PEEK_MESSAGE = "Choose a location to look at:"
+PEEK_MESSAGE = "Which location should I peek for you?"
+SHUTTLE_MESSAGE = "Get info about which shuttle bus service?"
 NEWS_WAIT_MESSAGE = "Fetching latest news. Please wait."
 INVALID_COMMAND_MESSAGE = "Say again? I didn't quite catch that."
 ALREADY_SUBSCRIBED_MESSAGE = "You are already subscribed to receive the latest tweets from NTU's official Twitter account! Wanna unsub? /unsubscribe"
@@ -74,19 +69,76 @@ NOT_SUBSCRIBED_MESSAGE = "You are not subscribed to receive the latest tweets fr
 SUCCESSFULLY_SUBSCRIBED = "Successfully subscribed to NTU's official Twitter account! Wanna unsub? /unsubscribe"
 SUCCESSFULLY_UNSUBSCRIBED = "Successfully unsubscribed from NTU's official Twitter account! Wanna sub back? /subscribe"
 
+BUS_SERVICES = {}
+LOCATIONS = {
+    "Fastfood Level, Admin Cluster": "fastfood",
+    "School of Art, Design and Media": "adm",
+    "Lee Wee Nam Library": "lwn-inside",
+    "Quad": "quad",
+    "Walkway between North and South Spines": "WalkwaybetweenNorthAndSouthSpines",
+    "Canteen B": "canteenB",
+    "Onestop@SAC": "onestop_sac"
+}
+
+CALLBACK_COMMAND_LOCATION = "location"
+CALLBACK_COMMAND_BUS = "bus"
+LOCATIONS_KEYBOARD = None
+BUS_SERVICES_KEYBOARD = None
+
+def init():
+
+    global LOCATIONS_KEYBOARD
+    global BUS_SERVICES_KEYBOARD
+
+    LOCATIONS_KEYBOARD = InlineKeyboardMarkup(inline_keyboard = [
+        [InlineKeyboardButton(text = key, callback_data = CALLBACK_COMMAND_LOCATION + ":" + key)]
+        for key in LOCATIONS.keys()
+    ])
+
+    shuttle_bus_page = urllib.request.urlopen(NTU_WEBSITE + SHUTTLE_BUS_URL).read()
+    for service in BeautifulSoup(shuttle_bus_page, "html.parser").find_all("span", {"class": "route_label"}):
+
+        service_name = service.string.strip()
+        shuttle_bus_info_page = urllib.request.urlopen(NTU_WEBSITE + service.find_next_sibling("a")['href']).read()
+
+        shuttle_bus_route = ""
+        sub_routes = service.parent.find_all("strong")
+
+        # workaround for inconsistent route layouting for campus rider service
+        if len(service.parent.find_all("span")) == 2: del sub_routes[-1]
+
+        # function to get list of bus stops given a header
+        parse_bus_stops = lambda element: "\n".join([str(index + 1) + ". " + bus_stop.string for index, bus_stop in enumerate(element.find_next("ul").find_all("li"))])
+
+        if len(sub_routes):
+            # combine all sub routes (as combination of the sub route header with its list) with other sub routes
+            shuttle_bus_route = "".join(["\n<b>" + sub_route.string + "</b>\n" + parse_bus_stops(sub_route) for sub_route in sub_routes])
+        else :
+            # just a list of bus stops without any sub route header
+            shuttle_bus_route = parse_bus_stops(service)
+
+        BUS_SERVICES[service_name] = {
+            # scrape bus service image url
+            "image_url": BeautifulSoup(shuttle_bus_info_page, "html.parser").find("div", {"class": "img-caption"}).img['src'],
+            # bus route information
+            "info": "<b>%s</b>\n\n<b>ROUTE</b>\n%s" % (service_name.upper(), shuttle_bus_route)
+        }
+
+    BUS_SERVICES_KEYBOARD = InlineKeyboardMarkup(inline_keyboard = [
+        [InlineKeyboardButton(text = key, callback_data = CALLBACK_COMMAND_BUS + ":" + key)] for key in BUS_SERVICES.keys()
+    ])
+
+    print("Initialized bot keyboards...")
+
 class NTUCampusBot(telepot.aio.helper.ChatHandler):
 
     def __init__(self, *args, **kwargs):
-
         super(NTUCampusBot, self).__init__(*args, **kwargs)
-        self._locations_keyboard = InlineKeyboardMarkup(inline_keyboard = [
-            [InlineKeyboardButton(text = key, callback_data = key)] for key in LOCATIONS.keys()
-        ])
 
     def _send_news(self, future):
 
         soup = BeautifulSoup(future.result(), "html.parser")
-        next_news = soup.findAll("div", {"class": "ntu_news_summary_title_first"})[0]
+        next_news = soup.find_all("div", {"class": "ntu_news_summary_title_first"})[0]
         for i in range(NEWS_COUNT):
             news_title = next_news.a.string.strip().title()
             news_link = next_news.a['href']
@@ -108,7 +160,8 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         await self._subscribe()
 
     async def _peek(self):
-        await self.sender.sendMessage(PEEK_MESSAGE, reply_markup = self._locations_keyboard)
+        global LOCATIONS_KEYBOARD
+        await self.sender.sendMessage(PEEK_MESSAGE, reply_markup = LOCATIONS_KEYBOARD)
 
     async def _help(self):
         await self.sender.sendMessage(HELP_MESSAGE, parse_mode = 'HTML')
@@ -116,7 +169,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
     async def _fetch_news(self):
         await self.sender.sendMessage(NEWS_WAIT_MESSAGE)
 
-        future = asyncio.ensure_future(self._load_url(NEWS_HUB_URL, NEWS_TIMEOUT))
+        future = asyncio.ensure_future(self._load_url(NEWS_HUB_URL, HTTP_REQUEST))
         future.add_done_callback(self._send_news)
 
     async def _about(self):
@@ -147,6 +200,10 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         else:
             await self.sender.sendMessage(NOT_SUBSCRIBED_MESSAGE)
 
+    async def _shuttle_bus(self):
+        global BUS_SERVICES_KEYBOARD
+        await self.sender.sendMessage(SHUTTLE_MESSAGE, reply_markup = BUS_SERVICES_KEYBOARD)
+
     async def on_chat_message(self, message):
 
         command = message['text'][1:]
@@ -168,19 +225,30 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
             await self._subscribe()
         elif command.startswith("unsubscribe"):
             await self._unsubscribe()
+        elif command.startswith("shuttle"):
+            await self._shuttle_bus()
         elif message['text'].startswith("/"):
             await self.sender.sendMessage(INVALID_COMMAND_MESSAGE)
 
     async def on_callback_query(self, message):
 
         callback_id = message['id']
-        location_name = message['data']
+        message_payload = message['data'].split(":")
+        command = message_payload[0]
+        parameter = message_payload[1]
 
-        await self.bot.answerCallbackQuery(callback_id, text = 'Fetching image. Please wait.')
-        cam_url = CAM_BASE_IMAGE_URL + LOCATIONS[location_name] + ".jpg?rand=" + str(time.time())
-        timestamp_message = time.strftime("%a, %d %b %y") + " - <b>" + location_name + "</b>"
-        await self.sender.sendMessage(timestamp_message, parse_mode='HTML')
-        asyncio.ensure_future(self.sender.sendPhoto(cam_url))
+        await self.bot.answerCallbackQuery(callback_id, text = 'Fetching data. Please wait.')
+        image_url = ""
+        response_message = ""
+        if (command == CALLBACK_COMMAND_BUS):
+            image_url = NTU_WEBSITE + BUS_SERVICES[parameter]["image_url"]
+            response_message = BUS_SERVICES[parameter]["info"]
+        else:
+            image_url = CAM_BASE_IMAGE_URL + LOCATIONS[parameter] + ".jpg?rand=" + str(time.time())
+            response_message = time.strftime("%a, %d %b %y") + " - <b>" + parameter + "</b>"
+
+        await self.sender.sendMessage(response_message, parse_mode='HTML')
+        asyncio.ensure_future(self.sender.sendPhoto(image_url))
 
     async def on__idle(self, event):
         chat = await self.administrator.getChat()
