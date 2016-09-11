@@ -33,6 +33,8 @@ You can control this bot by sending these commands:
 /peek - get current screenshot of a location
 /news - get latest news from NTU News Hub
 /about - get info about this bot
+/subscribe - subscribe to NTU's official twitter account feed
+/unsubscribe - unsubscribe from NTU's official twitter account feed
 '''
 
 START_MESSAGE = '''
