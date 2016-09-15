@@ -11,6 +11,7 @@ import urllib.request
 
 VERSION = "1.1.0"
 AUTHORS = ['Clarence', 'Beiyi', 'Yuxin', 'Joel', 'Qixuan']
+LOG_TAG = "bot"
 
 REPO_URL = "https://github.com/clarencecastillo/ntu-campusbot"
 CAM_BASE_IMAGE_URL = "https://webcam.ntu.edu.sg/upload/slider/"
@@ -94,6 +95,7 @@ def init():
         [InlineKeyboardButton(text = key, callback_data = CALLBACK_COMMAND_LOCATION + ":" + key)]
         for key in LOCATIONS.keys()
     ])
+    commons.log(LOG_TAG, "locations keyboard ready")
 
     shuttle_bus_page = urllib.request.urlopen(NTU_WEBSITE + SHUTTLE_BUS_URL).read()
     for service in BeautifulSoup(shuttle_bus_page, "html.parser").find_all("span", {"class": "route_label"}):
@@ -127,8 +129,7 @@ def init():
     BUS_SERVICES_KEYBOARD = InlineKeyboardMarkup(inline_keyboard = [
         [InlineKeyboardButton(text = key, callback_data = CALLBACK_COMMAND_BUS + ":" + key)] for key in BUS_SERVICES.keys()
     ])
-
-    print("Initialized bot keyboards...")
+    commons.log(LOG_TAG, "bus services keyboard ready")
 
 class NTUCampusBot(telepot.aio.helper.ChatHandler):
 
@@ -150,6 +151,12 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
             next_news = next_news.find_next_sibling("div", {"class": "ntu_news_summary_title"})
 
         future.remove_done_callback(self._send_news)
+        self._log("sent news")
+
+    def _log(message):
+        chat = await self.administrator.getChat()
+        sender = chat['title' if 'title' in chat else 'username']
+        commons.log(LOG_TAG, "[" + sender + ":" + chat['id'] + "] " + message)
 
     async def _load_url(self, url, timeout):
         response = await aiohttp.get(url)
@@ -205,11 +212,9 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         await self.sender.sendMessage(SHUTTLE_MESSAGE, reply_markup = BUS_SERVICES_KEYBOARD)
 
     async def on_chat_message(self, message):
-
+        print(str(message)) # temporary
         command = message['text'][1:]
-        chat = message['chat']
-        sender = chat['title' if 'title' in chat else 'username']
-        print("Message received from:", sender, "-", message['text'])
+        self._log("chat: " + message['text'])
 
         if command.startswith("start"):
             await self._start()
@@ -237,6 +242,8 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         command = message_payload[0]
         parameter = message_payload[1]
 
+        self._log("callback: " + message['data'])
+
         await self.bot.answerCallbackQuery(callback_id, text = 'Fetching data. Please wait.')
         image_url = ""
         response_message = ""
@@ -251,6 +258,5 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         asyncio.ensure_future(self.sender.sendPhoto(image_url))
 
     async def on__idle(self, event):
-        chat = await self.administrator.getChat()
-        print("Closing chat:", chat['title' if 'title' in chat else 'username'])
+        self._log("terminated")
         self.close()

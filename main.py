@@ -8,8 +8,9 @@ import asyncio
 import commons
 import bot
 
-TELEGRAM_TOKEN = os.environ['BOT_TOKEN']
+LOG_TAG = "main"
 
+TELEGRAM_TOKEN = os.environ['BOT_TOKEN']
 TWITTER_FEED_ACCOUNT = "NTUsg"
 TWITTER_TOKENS = {
     "consumer_key": os.environ['TWITTER_CONSUMER_KEY'],
@@ -20,14 +21,16 @@ TWITTER_TOKENS = {
 
 async def on_tweet(data):
     tweet_message = "<b>" + data['user']['screen_name'] + "</b>: " + data['text']
-    print("New tweet from", TWITTER_FEED_ACCOUNT, "-", data['text'])
+    commons.log(LOG_TAG, "sending tweet to " + str(len(commons.subscribers)) + " subscribers")
     for subscriber_id in commons.subscribers:
         await bot_delegator.sendMessage(subscriber_id, tweet_message, parse_mode = 'HTML')
 
 if __name__ == '__main__':
 
     commons.init()
+    commons.log(LOG_TAG, "initialized commons")
     bot.init()
+    commons.log(LOG_TAG, "initialized bot")
 
     global bot_delegator
     bot_delegator = telepot.aio.DelegatorBot(TELEGRAM_TOKEN, [
@@ -37,8 +40,9 @@ if __name__ == '__main__':
     ])
 
     stream = TwitterStream(TWITTER_TOKENS, TWITTER_FEED_ACCOUNT, on_tweet)
+    commons.log(LOG_TAG, "initialized twitter listener")
 
     bot_loop = asyncio.get_event_loop()
     bot_loop.create_task(bot_delegator.message_loop())
-    print('NTU_CampusBot is now listening...')
+    commons.log(LOG_TAG, "NTU_CampusBot ready!")
     bot_loop.run_forever()

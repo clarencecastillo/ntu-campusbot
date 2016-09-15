@@ -5,6 +5,9 @@ from tweepy import Stream
 import tweepy
 import json
 import asyncio
+import commons
+
+LOG_TAG = "bot"
 
 class TweetListener(StreamListener):
 
@@ -14,11 +17,13 @@ class TweetListener(StreamListener):
         self.loop = asyncio.get_event_loop()
 
     def on_data(self, data):
-        self.loop.create_task(self.on_tweet(json.loads(data)))
+        tweet = json.loads(data)
+        self.loop.create_task(self.on_tweet(tweet))
+        commons.log(LOG_TAG, "new tweet from " + twitter_account + ": " + tweet['text'])
         return True
 
     def on_error(self, status):
-        print(status)
+        commons.log(LOG_TAG, str(status))
 
 class TwitterStream():
 
@@ -29,7 +34,11 @@ class TwitterStream():
 
         api = tweepy.API(auth)
         user_id = str(api.get_user(account).id)
-        print("Watching for new tweets from:", account)
+
+        global twitter_account
+        twitter_account = account + "[" + user_id + "]"
+
+        commons.log(LOG_TAG, "listening for new tweets from " + twitter_account)
 
         listener = TweetListener(on_tweet)
         self.stream = Stream(auth = api.auth, listener = listener)
