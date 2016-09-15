@@ -155,6 +155,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         self._log("sent " + str(NEWS_COUNT) + " news items", chat)
 
     def _log(self, message, chat):
+        print(str(chat))
         sender = chat['title' if 'title' in chat else 'username']
         commons.log(LOG_TAG, "[" + sender + ":" + str(chat['id']) + "] " + message)
 
