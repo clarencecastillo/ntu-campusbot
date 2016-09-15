@@ -8,6 +8,7 @@ import random
 import asyncio
 import commons
 import urllib.request
+import functools
 
 VERSION = "1.1.0"
 AUTHORS = ['Clarence', 'Beiyi', 'Yuxin', 'Joel', 'Qixuan']
@@ -136,7 +137,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
     def __init__(self, *args, **kwargs):
         super(NTUCampusBot, self).__init__(*args, **kwargs)
 
-    def _send_news(self, future):
+    def _send_news(self, chat, future):
 
         soup = BeautifulSoup(future.result(), "html.parser")
         next_news = soup.find_all("div", {"class": "ntu_news_summary_title_first"})[0]
@@ -151,41 +152,45 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
             next_news = next_news.find_next_sibling("div", {"class": "ntu_news_summary_title"})
 
         future.remove_done_callback(self._send_news)
-        self._log("sent news")
+        self._log("sent " + str(NEWS_COUNT) + " news items", chat)
 
-    def _log(message):
-        chat = await self.administrator.getChat()
+    def _log(self, message, chat):
         sender = chat['title' if 'title' in chat else 'username']
-        commons.log(LOG_TAG, "[" + sender + ":" + chat['id'] + "] " + message)
+        commons.log(LOG_TAG, "[" + sender + ":" + str(chat['id']) + "] " + message)
 
     async def _load_url(self, url, timeout):
         response = await aiohttp.get(url)
         return (await response.text())
 
-    async def _start(self):
-        await self.sender.sendMessage(START_MESSAGE, parse_mode = 'HTML', disable_web_page_preview = True)
-        await self._subscribe()
+    async def _start(self, is_admin):
 
-    async def _peek(self):
+        if (is_admin):
+            await self.sender.sendMessage("Hi Admin!")
+        else:
+            await self.sender.sendMessage(START_MESSAGE, parse_mode = 'HTML', disable_web_page_preview = True)
+            await self._subscribe()
+
+    async def _peek(self, is_admin):
         global LOCATIONS_KEYBOARD
         await self.sender.sendMessage(PEEK_MESSAGE, reply_markup = LOCATIONS_KEYBOARD)
 
-    async def _help(self):
+    async def _help(self, is_admin):
         await self.sender.sendMessage(HELP_MESSAGE, parse_mode = 'HTML')
 
-    async def _fetch_news(self):
+    async def _fetch_news(self, is_admin):
         await self.sender.sendMessage(NEWS_WAIT_MESSAGE)
 
+        chat = await self.administrator.getChat()
         future = asyncio.ensure_future(self._load_url(NEWS_HUB_URL, HTTP_REQUEST))
-        future.add_done_callback(self._send_news)
+        future.add_done_callback(functools.partial(self._send_news, chat))
 
-    async def _about(self):
+    async def _about(self, is_admin):
 
         author_names = "\n".join(random.sample(AUTHORS, len(AUTHORS)))
         heart_icon = u'\U00002764'
         await self.sender.sendMessage(ABOUT_MESSAGE % (VERSION, heart_icon, author_names), parse_mode = 'HTML')
 
-    async def _subscribe(self):
+    async def _subscribe(self, is_admin):
 
         chat = await self.administrator.getChat()
         chat_id = chat['id']
@@ -196,7 +201,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         else:
             await self.sender.sendMessage(ALREADY_SUBSCRIBED_MESSAGE)
 
-    async def _unsubscribe(self):
+    async def _unsubscribe(self, is_admin):
 
         chat = await self.administrator.getChat()
         chat_id = chat['id']
@@ -207,31 +212,42 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         else:
             await self.sender.sendMessage(NOT_SUBSCRIBED_MESSAGE)
 
-    async def _shuttle_bus(self):
+    async def _shuttle_bus(self, is_admin):
         global BUS_SERVICES_KEYBOARD
         await self.sender.sendMessage(SHUTTLE_MESSAGE, reply_markup = BUS_SERVICES_KEYBOARD)
 
+    async def _broadcast(self, message, is_admin):
+        if message:
+            for subscriber_id in commons.subscribers:
+                await self.bot.sendMessage(subscriber_id, message)
+
     async def on_chat_message(self, message):
-        print(str(message)) # temporary
-        command = message['text'][1:]
-        self._log("chat: " + message['text'])
+        if("text" not in message): return
+        command, _, payload = message['text'][1:].partition(" ")
+
+        chat = await self.administrator.getChat()
+        self._log("chat: " + message['text'], chat)
+
+        is_admin = chat['id'] in commons.shared['admins']
 
         if command.startswith("start"):
-            await self._start()
+            await self._start(is_admin)
         elif command.startswith("peek"):
-            await self._peek()
+            await self._peek(is_admin)
         elif command.startswith("news"):
-            await self._fetch_news()
+            await self._fetch_news(is_admin)
         elif command.startswith("help"):
-            await self._help()
+            await self._help(is_admin)
         elif command.startswith("about"):
-            await self._about()
+            await self._about(is_admin)
         elif command.startswith("subscribe"):
-            await self._subscribe()
+            await self._subscribe(is_admin)
         elif command.startswith("unsubscribe"):
-            await self._unsubscribe()
+            await self._unsubscribe(is_admin)
         elif command.startswith("shuttle"):
-            await self._shuttle_bus()
+            await self._shuttle_bus(is_admin)
+        elif command.startswith("broadcast"):
+            await self._broadcast(payload, is_admin)
         elif message['text'].startswith("/"):
             await self.sender.sendMessage(INVALID_COMMAND_MESSAGE)
 
@@ -242,7 +258,8 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         command = message_payload[0]
         parameter = message_payload[1]
 
-        self._log("callback: " + message['data'])
+        chat = await self.administrator.getChat()
+        self._log("callback - " + message['data'], chat)
 
         await self.bot.answerCallbackQuery(callback_id, text = 'Fetching data. Please wait.')
         image_url = ""
@@ -258,5 +275,6 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         asyncio.ensure_future(self.sender.sendPhoto(image_url))
 
     async def on__idle(self, event):
-        self._log("terminated")
+        chat = await self.administrator.getChat()
+        self._log("session expired", chat)
         self.close()

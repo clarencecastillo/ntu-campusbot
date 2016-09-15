@@ -4,9 +4,12 @@ import os
 FILE_NAME = "subscribers.json"
 LOG_TAG = "commons"
 
-def init():
+def init(shared_data):
     global subscribers
     subscribers = load_subscribers() if os.path.isfile(FILE_NAME) else []
+
+    global shared
+    shared = shared_data
 
 def log(tag, message):
     print("<" + tag.upper() + "> - ", message)

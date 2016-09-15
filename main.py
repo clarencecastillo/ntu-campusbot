@@ -11,6 +11,7 @@ import bot
 LOG_TAG = "main"
 
 TELEGRAM_TOKEN = os.environ['BOT_TOKEN']
+ADMINISTRATORS = [int(admin_id) for admin_id in os.environ['ADMINISTRATORS'].split(",")]
 TWITTER_FEED_ACCOUNT = "NTUsg"
 TWITTER_TOKENS = {
     "consumer_key": os.environ['TWITTER_CONSUMER_KEY'],
@@ -27,7 +28,9 @@ async def on_tweet(data):
 
 if __name__ == '__main__':
 
-    commons.init()
+    commons.init({
+        "admins": ADMINISTRATORS
+    })
     commons.log(LOG_TAG, "initialized commons")
     bot.init()
     commons.log(LOG_TAG, "initialized bot")
