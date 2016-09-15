@@ -155,8 +155,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         self._log("sent " + str(NEWS_COUNT) + " news items", chat)
 
     def _log(self, message, chat):
-        print(str(chat))
-        sender = chat['title' if 'title' in chat else 'username']
+        sender = chat['title' if 'title' in chat else ('username' if 'username' in chat else 'first_name')]
         commons.log(LOG_TAG, "[" + sender + ":" + str(chat['id']) + "] " + message)
 
     async def _load_url(self, url, timeout):
@@ -197,7 +196,8 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         chat_id = chat['id']
 
         if chat_id not in commons.subscribers:
-            commons.new_subscriber(chat_id, chat['title' if 'title' in chat else 'username'])
+            sender = chat['title' if 'title' in chat else ('username' if 'username' in chat else 'first_name')]
+            commons.new_subscriber(chat_id, sender)
             await self.sender.sendMessage(SUCCESSFULLY_SUBSCRIBED)
         else:
             await self.sender.sendMessage(ALREADY_SUBSCRIBED_MESSAGE)
@@ -208,7 +208,8 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         chat_id = chat['id']
 
         if chat_id in commons.subscribers:
-            commons.remove_subscriber(chat_id, chat['title' if 'title' in chat else 'username'])
+            sender = chat['title' if 'title' in chat else ('username' if 'username' in chat else 'first_name')]
+            commons.remove_subscriber(chat_id, sender)
             await self.sender.sendMessage(SUCCESSFULLY_UNSUBSCRIBED)
         else:
             await self.sender.sendMessage(NOT_SUBSCRIBED_MESSAGE)
