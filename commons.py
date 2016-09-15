@@ -12,16 +12,16 @@ def init(shared_data):
     shared = shared_data
 
 def log(tag, message):
-    print("<" + tag.upper() + "> - ", message)
+    print("<" + tag.upper() + ">", message)
 
 def new_subscriber(id, name):
     subscribers.append(id)
-    log(LOG_TAG, "new subscriber: " + name + "[" + id + "]")
+    log(LOG_TAG, "new subscriber: " + name + "[" + str(id) + "]")
     save_subscribers(subscribers)
 
 def remove_subscriber(id, name):
     subscribers.remove(id)
-    log(LOG_TAG, "removed subscriber: " + name + "[" + id + "]")
+    log(LOG_TAG, "removed subscriber: " + name + "[" + str(id) + "]")
     save_subscribers(subscribers)
 
 def save_subscribers(subscribers_list):

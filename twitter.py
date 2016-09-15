@@ -7,7 +7,7 @@ import json
 import asyncio
 import commons
 
-LOG_TAG = "bot"
+LOG_TAG = "twitter"
 
 class TweetListener(StreamListener):
 
@@ -36,7 +36,7 @@ class TwitterStream():
         user_id = str(api.get_user(account).id)
 
         global twitter_account
-        twitter_account = account + "[" + user_id + "]"
+        twitter_account = account + " (" + user_id + ")"
 
         commons.log(LOG_TAG, "listening for new tweets from " + twitter_account)
 
