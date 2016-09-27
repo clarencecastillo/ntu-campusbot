@@ -181,7 +181,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
             await self.sender.sendMessage("Hi Admin!\nCurrent Status: " + commons.get_data("status"))
         else:
             await self.sender.sendMessage(START_MESSAGE, parse_mode = 'HTML', disable_web_page_preview = True)
-            await self._subscribe()
+            await self._subscribe(is_admin)
 
     async def _peek(self, is_admin, payload = None):
         global LOCATIONS_KEYBOARD
