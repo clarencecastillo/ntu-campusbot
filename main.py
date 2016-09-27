@@ -20,6 +20,13 @@ TWITTER_TOKENS = {
 }
 
 async def on_tweet(data):
+
+    # increment tweet stat count
+    stats = commons.get_data("stats")
+    stats["tweets"] = (0 if "tweets" not in stats else int(stats["tweets"])) + 1
+    commons.set_data("stats", stats)
+
+    # send tweet to all subscribers
     tweet_message = "<b>" + data['user']['screen_name'] + "</b>: " + data['text']
     subscribers = commons.get_data("subscribers")
     commons.log(LOG_TAG, "sending tweet to " + str(len(subscribers)) + " subscribers")
@@ -48,4 +55,5 @@ if __name__ == '__main__':
     bot_loop = asyncio.get_event_loop()
     bot_loop.create_task(bot_delegator.message_loop())
     commons.log(LOG_TAG, "NTU_CampusBot ready!")
+    commons.set_data("status", "running")
     bot_loop.run_forever()

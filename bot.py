@@ -70,6 +70,7 @@ ALREADY_SUBSCRIBED_MESSAGE = "You are already subscribed to receive the latest t
 NOT_SUBSCRIBED_MESSAGE = "You are not subscribed to receive the latest tweets from NTU's official Twitter account! Wanna sub? /subscribe"
 SUCCESSFULLY_SUBSCRIBED = "Successfully subscribed to NTU's official Twitter account! Wanna unsub? /unsubscribe"
 SUCCESSFULLY_UNSUBSCRIBED = "Successfully unsubscribed from NTU's official Twitter account! Wanna sub back? /subscribe"
+MAINTENANCE_MODE_MESSAGE = "NTU_CampusBot is currently under maintenance! We apologise for any inconvenience caused. Try again later? %s" % (u'\U0001F605')
 
 BUS_SERVICES = {}
 LOCATIONS = {
@@ -174,35 +175,35 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         response = await aiohttp.get(url)
         return (await response.text())
 
-    async def _start(self, is_admin):
+    async def _start(self, is_admin, payload = None):
 
-        if (is_admin):
-            await self.sender.sendMessage("Hi Admin!")
+        if is_admin and payload != "force":
+            await self.sender.sendMessage("Hi Admin!\nCurrent Status: " + commons.get_data("status"))
         else:
             await self.sender.sendMessage(START_MESSAGE, parse_mode = 'HTML', disable_web_page_preview = True)
             await self._subscribe()
 
-    async def _peek(self, is_admin):
+    async def _peek(self, is_admin, payload = None):
         global LOCATIONS_KEYBOARD
         await self.sender.sendMessage(PEEK_MESSAGE, reply_markup = LOCATIONS_KEYBOARD)
 
-    async def _help(self, is_admin):
+    async def _help(self, is_admin, payload = None):
         await self.sender.sendMessage(HELP_MESSAGE, parse_mode = 'HTML')
 
-    async def _fetch_news(self, is_admin):
+    async def _news(self, is_admin, payload = None):
         await self.sender.sendMessage(NEWS_WAIT_MESSAGE)
 
         chat = await self.administrator.getChat()
         future = asyncio.ensure_future(self._load_url(NEWS_HUB_URL, HTTP_REQUEST))
         future.add_done_callback(functools.partial(self._send_news, chat))
 
-    async def _about(self, is_admin):
+    async def _about(self, is_admin, payload = None):
 
         author_names = "\n".join(random.sample(AUTHORS, len(AUTHORS)))
-        heart_icon = u'\U00002764'
-        await self.sender.sendMessage(ABOUT_MESSAGE % (VERSION, heart_icon, author_names), parse_mode = 'HTML')
+        random_icon = random.choice([u'\U0001F4A9', u'\U00002764', u'\U0001F340', u'\U00002753', u'\U0000270C', u'\U0001F525'])
+        await self.sender.sendMessage(ABOUT_MESSAGE % (VERSION, random_icon, author_names), parse_mode = 'HTML')
 
-    async def _subscribe(self, is_admin):
+    async def _subscribe(self, is_admin, payload = None):
 
         chat = await self.administrator.getChat()
         chat_id = chat['id']
@@ -214,7 +215,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         else:
             await self.sender.sendMessage(ALREADY_SUBSCRIBED_MESSAGE)
 
-    async def _unsubscribe(self, is_admin):
+    async def _unsubscribe(self, is_admin, payload = None):
 
         chat = await self.administrator.getChat()
         chat_id = chat['id']
@@ -226,14 +227,47 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         else:
             await self.sender.sendMessage(NOT_SUBSCRIBED_MESSAGE)
 
-    async def _shuttle_bus(self, is_admin):
+    async def _shuttle(self, is_admin, payload = None):
         global BUS_SERVICES_KEYBOARD
         await self.sender.sendMessage(SHUTTLE_MESSAGE, reply_markup = BUS_SERVICES_KEYBOARD)
 
-    async def _broadcast(self, message, is_admin):
-        if message:
-                await self.bot.sendMessage(subscriber_id, message)
+    async def _broadcast(self, is_admin, payload):
+        if payload and is_admin:
             for subscriber_id in commons.get_data("subscribers"):
+                await self.bot.sendMessage(subscriber_id, payload)
+        else:
+            raise ValueError("unauthorised")
+
+    async def _stats(self, is_admin, payload = None):
+        if is_admin:
+            statistics = commons.get_data("stats")
+            message = "NTU_CampusBot Statistics:\n" + ("=" * 25) + "\n\n"
+            message += "\n".join([key + ": " + str(statistics[key]) for key in statistics.keys()])
+            await self.sender.sendMessage(message)
+        else:
+            raise ValueError("unauthorised")
+
+    async def _subscribers(self, is_admin, payload = None):
+        if is_admin:
+            subscribers = commons.get_data("subscribers")
+            message = "NTU_CampusBot Subscribers:\n" + ("=" * 25) + "\n\n"
+            message += "\n".join([str(subscriber) for subscriber in subscribers])
+            await self.sender.sendMessage(message)
+        else:
+            raise ValueError("unauthorised")
+
+    async def _maintenance(self, is_admin, payload = None):
+        if is_admin and ((payload.lower() in ["on", "off"]) if payload else True):
+
+            flip_current = "maintenance" if commons.get_data("status") == "running" else "running"
+            new_status = "maintenance" if payload == "on" else ("off" if payload == "off" else flip_current)
+            commons.set_data("status", new_status)
+
+            message = "Maintenance Mode: " + ("on" if new_status == "maintenance" else "off")
+            await self.sender.sendMessage(message)
+
+        else:
+            raise ValueError("unauthorised")
 
     async def on_chat_message(self, message):
         if("text" not in message): return
@@ -243,27 +277,22 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         self._log("chat: " + message['text'], chat)
         is_admin = chat['id'] in commons.get_data("admins")
 
-
-        if command.startswith("start"):
-            await self._start(is_admin)
-        elif command.startswith("peek"):
-            await self._peek(is_admin)
-        elif command.startswith("news"):
-            await self._fetch_news(is_admin)
-        elif command.startswith("help"):
-            await self._help(is_admin)
-        elif command.startswith("about"):
-            await self._about(is_admin)
-        elif command.startswith("subscribe"):
-            await self._subscribe(is_admin)
-        elif command.startswith("unsubscribe"):
-            await self._unsubscribe(is_admin)
-        elif command.startswith("shuttle"):
-            await self._shuttle_bus(is_admin)
-        elif command.startswith("broadcast"):
-            await self._broadcast(payload, is_admin)
+        maintenance_mode = commons.get_data("status") == "maintenance"
+        if maintenance_mode and not is_admin:
+            await self.sender.sendMessage(MAINTENANCE_MODE_MESSAGE)
         elif message['text'].startswith("/"):
-            await self.sender.sendMessage(INVALID_COMMAND_MESSAGE)
+
+            try:
+                command_call = getattr(self, "_" + command)
+                await command_call(is_admin, payload)
+
+                # increment command stats count
+                stats = commons.get_data("stats")
+                stats[command] = (0 if command not in stats else int(stats[command])) + 1
+                commons.set_data("stats", stats)
+
+            except Exception as e:
+                await self.sender.sendMessage(INVALID_COMMAND_MESSAGE)
 
     async def on_callback_query(self, message):
 
