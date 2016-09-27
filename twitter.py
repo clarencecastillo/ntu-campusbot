@@ -18,9 +18,10 @@ class TweetListener(StreamListener):
 
     def on_data(self, data):
         tweet = json.loads(data)
-        self.loop.create_task(self.on_tweet(tweet))
-        commons.log(LOG_TAG, "new tweet from " + twitter_account + ": " + tweet['text'])
-        return True
+        if not tweet["retweeted"]:
+            self.loop.create_task(self.on_tweet(tweet))
+            commons.log(LOG_TAG, "new tweet from " + twitter_account + ": " + tweet['text'])
+            return True
 
     def on_error(self, status):
         commons.log(LOG_TAG, str(status))
@@ -42,4 +43,4 @@ class TwitterStream():
 
         listener = TweetListener(on_tweet)
         self.stream = Stream(auth = api.auth, listener = listener)
-        self.stream.filter(follow = [user_id], async=True)
+        self.stream.filter(follow = [user_id], async = True)
