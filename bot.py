@@ -132,6 +132,18 @@ def init():
     ])
     commons.log(LOG_TAG, "bus services keyboard ready")
 
+def _new_subscriber(id, name):
+    subscribers = commons.get_data("subscribers")
+    subscribers.append(id)
+    commons.set_data("subscribers", subscribers)
+    commons.log(LOG_TAG, "new subscriber: " + name + "[" + str(id) + "]")
+
+def _remove_subscriber(id, name):
+    subscribers = commons.get_data("subscribers")
+    subscribers.remove(id)
+    commons.set_data("subscribers", subscribers)
+    commons.log(LOG_TAG, "removed subscriber: " + name + "[" + str(id) + "]")
+
 class NTUCampusBot(telepot.aio.helper.ChatHandler):
 
     def __init__(self, *args, **kwargs):
@@ -195,9 +207,9 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         chat = await self.administrator.getChat()
         chat_id = chat['id']
 
-        if chat_id not in commons.subscribers:
+        if chat_id not in commons.get_data("subscribers"):
             sender = chat['title' if 'title' in chat else ('username' if 'username' in chat else 'first_name')]
-            commons.new_subscriber(chat_id, sender)
+            _new_subscriber(chat_id, sender)
             await self.sender.sendMessage(SUCCESSFULLY_SUBSCRIBED)
         else:
             await self.sender.sendMessage(ALREADY_SUBSCRIBED_MESSAGE)
@@ -207,9 +219,9 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         chat = await self.administrator.getChat()
         chat_id = chat['id']
 
-        if chat_id in commons.subscribers:
+        if chat_id in commons.get_data("subscribers"):
             sender = chat['title' if 'title' in chat else ('username' if 'username' in chat else 'first_name')]
-            commons.remove_subscriber(chat_id, sender)
+            _remove_subscriber(chat_id, sender)
             await self.sender.sendMessage(SUCCESSFULLY_UNSUBSCRIBED)
         else:
             await self.sender.sendMessage(NOT_SUBSCRIBED_MESSAGE)
@@ -220,8 +232,8 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
 
     async def _broadcast(self, message, is_admin):
         if message:
-            for subscriber_id in commons.subscribers:
                 await self.bot.sendMessage(subscriber_id, message)
+            for subscriber_id in commons.get_data("subscribers"):
 
     async def on_chat_message(self, message):
         if("text" not in message): return
@@ -229,8 +241,8 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
 
         chat = await self.administrator.getChat()
         self._log("chat: " + message['text'], chat)
+        is_admin = chat['id'] in commons.get_data("admins")
 
-        is_admin = chat['id'] in commons.shared['admins']
 
         if command.startswith("start"):
             await self._start(is_admin)

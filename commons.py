@@ -1,36 +1,19 @@
 import json
 import os
 
-FILE_NAME = "subscribers.json"
+SAVE_FILE_NAME = "save_data.json"
 LOG_TAG = "commons"
 
-def init(shared_data):
-    global subscribers
-    subscribers = load_subscribers() if os.path.isfile(FILE_NAME) else []
+def set_data(key, value):
+    save_data = get_data()
+    with open(SAVE_FILE_NAME, 'w') as save_file:
+        save_data[key] = value
+        json.dump(save_data, save_file)
 
-    global shared
-    shared = shared_data
+def get_data(key = None):
+    with open(SAVE_FILE_NAME, 'r') as save_file:
+        save_data = json.load(save_file)
+        return (save_data if not key else save_data[key])
 
 def log(tag, message):
     print("<" + tag.upper() + ">", message)
-
-def new_subscriber(id, name):
-    subscribers.append(id)
-    log(LOG_TAG, "new subscriber: " + name + "[" + str(id) + "]")
-    save_subscribers(subscribers)
-
-def remove_subscriber(id, name):
-    subscribers.remove(id)
-    log(LOG_TAG, "removed subscriber: " + name + "[" + str(id) + "]")
-    save_subscribers(subscribers)
-
-def save_subscribers(subscribers_list):
-    with open(FILE_NAME, 'w') as subcribers_list_file:
-        save_data = {'subscribers' : subscribers_list}
-        json.dump(save_data, subcribers_list_file)
-
-def load_subscribers():
-    with open(FILE_NAME) as subcribers_list_file:
-        load_data = json.load(subcribers_list_file)['subscribers']
-        log(LOG_TAG, "loaded " + str(len(load_data)) + " subscribers")
-        return load_data

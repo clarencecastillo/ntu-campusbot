@@ -11,7 +11,6 @@ import bot
 LOG_TAG = "main"
 
 TELEGRAM_TOKEN = os.environ['BOT_TOKEN']
-ADMINISTRATORS = [int(admin_id) for admin_id in os.environ['ADMINISTRATORS'].split(",")]
 TWITTER_FEED_ACCOUNT = "NTUsg"
 TWITTER_TOKENS = {
     "consumer_key": os.environ['TWITTER_CONSUMER_KEY'],
@@ -22,16 +21,17 @@ TWITTER_TOKENS = {
 
 async def on_tweet(data):
     tweet_message = "<b>" + data['user']['screen_name'] + "</b>: " + data['text']
-    commons.log(LOG_TAG, "sending tweet to " + str(len(commons.subscribers)) + " subscribers")
-    for subscriber_id in commons.subscribers:
+    subscribers = commons.get_data("subscribers")
+    commons.log(LOG_TAG, "sending tweet to " + str(len(subscribers)) + " subscribers")
+    for subscriber_id in subscribers:
         await bot_delegator.sendMessage(subscriber_id, tweet_message, parse_mode = 'HTML')
 
 if __name__ == '__main__':
 
-    commons.init({
-        "admins": ADMINISTRATORS
-    })
-    commons.log(LOG_TAG, "initialized commons")
+    administrators = [admin_id for admin_id in os.environ['ADMINISTRATORS'].split(",")]
+    commons.set_data("admins", [int(admin_id) for admin_id in administrators])
+    commons.log(LOG_TAG, "initialized administrators: " + ", ".join(administrators))
+
     bot.init()
     commons.log(LOG_TAG, "initialized bot")
 
