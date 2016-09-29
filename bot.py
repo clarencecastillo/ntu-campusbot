@@ -1,5 +1,9 @@
 from bs4 import BeautifulSoup
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
+from io import BytesIO
+from scipy import misc
+from urllib import request
+from skimage import measure
 
 import telepot
 import time
@@ -7,7 +11,6 @@ import aiohttp
 import random
 import asyncio
 import commons
-import urllib.request
 import functools
 
 VERSION = "1.1.0"
@@ -73,6 +76,7 @@ SUCCESSFULLY_UNSUBSCRIBED = "Successfully unsubscribed from NTU's official Twitt
 MAINTENANCE_MODE_MESSAGE = "NTU_CampusBot is currently under maintenance! We apologise for any inconvenience caused. Try again later? %s" % (u'\U0001F605')
 
 BUS_SERVICES = {}
+LOCATION_PROFILES = {}
 LOCATIONS = {
     "Fastfood Level, Admin Cluster": "fastfood",
     "School of Art, Design and Media": "adm",
@@ -90,6 +94,7 @@ BUS_SERVICES_KEYBOARD = None
 
 def init():
 
+    global LOCATION_PROFILES
     global LOCATIONS_KEYBOARD
     global BUS_SERVICES_KEYBOARD
 
@@ -99,11 +104,11 @@ def init():
     ])
     commons.log(LOG_TAG, "locations keyboard ready")
 
-    shuttle_bus_page = urllib.request.urlopen(NTU_WEBSITE + SHUTTLE_BUS_URL).read()
+    shuttle_bus_page = request.urlopen(NTU_WEBSITE + SHUTTLE_BUS_URL).read()
     for service in BeautifulSoup(shuttle_bus_page, "html.parser").find_all("span", {"class": "route_label"}):
 
         service_name = service.string.strip()
-        shuttle_bus_info_page = urllib.request.urlopen(NTU_WEBSITE + service.find_next_sibling("a")['href']).read()
+        shuttle_bus_info_page = request.urlopen(NTU_WEBSITE + service.find_next_sibling("a")['href']).read()
 
         shuttle_bus_route = ""
         sub_routes = service.parent.find_all("strong")
@@ -132,6 +137,22 @@ def init():
         [InlineKeyboardButton(text = key, callback_data = CALLBACK_COMMAND_BUS + ":" + key)] for key in BUS_SERVICES.keys()
     ])
     commons.log(LOG_TAG, "bus services keyboard ready")
+
+    for location in LOCATIONS.values():
+
+        img_file_name = "./profiles/" + location + "_%s.jpg"
+        try:
+
+            LOCATION_PROFILES[location] = {
+                "full": misc.imread(img_file_name % ("full")),
+                "average": misc.imread(img_file_name % ("average")),
+                "empty": misc.imread(img_file_name % ("empty"))
+            }
+
+        except Exception as e:
+            commons.log(LOG_TAG, "no profile found for " + location)
+
+    commons.log(LOG_TAG, "location profiles ready")
 
 def _new_subscriber(id, name):
     subscribers = commons.get_data("subscribers")
@@ -312,8 +333,23 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
             image_url = NTU_WEBSITE + BUS_SERVICES[parameter]["image_url"]
             response_message = BUS_SERVICES[parameter]["info"]
         else:
-            image_url = CAM_BASE_IMAGE_URL + LOCATIONS[parameter] + ".jpg?rand=" + str(time.time())
+            location = LOCATIONS[parameter]
+            image_url = CAM_BASE_IMAGE_URL + location + ".jpg?rand=" + str(time.time())
             response_message = time.strftime("%a, %d %b %y") + " - <b>" + parameter + "</b>"
+
+            if location in LOCATION_PROFILES:
+
+                image_file = BytesIO(request.urlopen(image_url).read())
+                image = misc.imread(image_file)
+
+                matching_profile = ("average", measure.compare_mse(image, LOCATION_PROFILES[location]["average"]))
+                profiles = [key for key in LOCATION_PROFILES[location].keys()]
+                if "average" in profiles: profiles.remove("average")
+                for profile in profiles:
+                    mse = measure.compare_mse(image, LOCATION_PROFILES[location][profile])
+                    if mse < matching_profile[1]: matching_profile = (profile, mse)
+
+                response_message += "\nApproximated crowd density: <b>" + matching_profile[0].upper() + "</b>"
 
         await self.sender.sendMessage(response_message, parse_mode='HTML')
         asyncio.ensure_future(self.sender.sendPhoto(image_url))

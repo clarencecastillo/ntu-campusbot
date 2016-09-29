@@ -1,3 +1,5 @@
 telepot
 beautifulsoup4
 tweepy
+scikit-image
+scipy
