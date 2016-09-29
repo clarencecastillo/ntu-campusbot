@@ -30,8 +30,8 @@ async def on_tweet(data):
     tweet_message = "<b>" + data['user']['screen_name'] + "</b>: " + data['text']
     subscribers = commons.get_data("subscribers")
     commons.log(LOG_TAG, "sending tweet to " + str(len(subscribers)) + " subscribers")
-    for subscriber_id in subscribers:
-        await bot_delegator.sendMessage(subscriber_id, tweet_message, parse_mode = 'HTML')
+    for subscriber_id in subscribers.keys():
+        await bot_delegator.sendMessage(int(subscriber_id), tweet_message, parse_mode = 'HTML')
 
 if __name__ == '__main__':
 

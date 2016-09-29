@@ -156,15 +156,15 @@ def init():
 
 def _new_subscriber(id, name):
     subscribers = commons.get_data("subscribers")
-    subscribers.append(id)
+    subscribers[id] = name
     commons.set_data("subscribers", subscribers)
-    commons.log(LOG_TAG, "new subscriber: " + name + "[" + str(id) + "]")
+    commons.log(LOG_TAG, "new subscriber: " + name + "[" + id + "]")
 
 def _remove_subscriber(id, name):
     subscribers = commons.get_data("subscribers")
-    subscribers.remove(id)
+    del subscribers[id]
     commons.set_data("subscribers", subscribers)
-    commons.log(LOG_TAG, "removed subscriber: " + name + "[" + str(id) + "]")
+    commons.log(LOG_TAG, "removed subscriber: " + name + "[" + id + "]")
 
 class NTUCampusBot(telepot.aio.helper.ChatHandler):
 
@@ -227,7 +227,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
     async def _subscribe(self, is_admin, payload = None):
 
         chat = await self.administrator.getChat()
-        chat_id = chat['id']
+        chat_id = str(chat['id'])
 
         if chat_id not in commons.get_data("subscribers"):
             sender = chat['title' if 'title' in chat else ('username' if 'username' in chat else 'first_name')]
@@ -239,7 +239,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
     async def _unsubscribe(self, is_admin, payload = None):
 
         chat = await self.administrator.getChat()
-        chat_id = chat['id']
+        chat_id = str(chat['id'])
 
         if chat_id in commons.get_data("subscribers"):
             sender = chat['title' if 'title' in chat else ('username' if 'username' in chat else 'first_name')]
@@ -254,8 +254,8 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
 
     async def _broadcast(self, is_admin, payload):
         if payload and is_admin:
-            for subscriber_id in commons.get_data("subscribers"):
-                await self.bot.sendMessage(subscriber_id, payload)
+            for subscriber_id in commons.get_data("subscribers").keys():
+                await self.bot.sendMessage(int(subscriber_id), payload)
         else:
             raise ValueError("unauthorised")
 
@@ -272,7 +272,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         if is_admin:
             subscribers = commons.get_data("subscribers")
             message = "NTU_CampusBot Subscribers:\n" + ("=" * 25) + "\n\n"
-            message += "\n".join([str(subscriber) for subscriber in subscribers])
+            message += "\n".join(subscribers.values())
             await self.sender.sendMessage(message)
         else:
             raise ValueError("unauthorised")
@@ -314,6 +314,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
                 commons.set_data("stats", stats)
 
             except Exception as e:
+                print(e)
                 await self.sender.sendMessage(INVALID_COMMAND_MESSAGE)
 
     async def on_callback_query(self, message):
