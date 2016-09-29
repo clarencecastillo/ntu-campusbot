@@ -81,7 +81,7 @@ $ heroku ps:scale worker=1
 | **/broadcast** | Broadcasts a text message to all subscribers. Requires the message. |
 | **/stats** | Returns statistics about the bot including the total number of times each command has been called and the number of times tweets have been sent out. Command will be omitted from the list if it has never been called before. |
 | **/subscribers** | Returns a list of subscribed users/groups as a list of usernames/group chat names/first names. |
-| **/maintenance** | Toggles maintenance mode on/off. Setting maintenance mode on disables standard users from using the bot. Pass the optional paramter *on* OR *off* to specify the mode. |
+| **/maintenance** | Toggles maintenance mode on/off. Setting maintenance mode on disables standard users from using the bot. Pass the optional parameter *on* OR *off* to specify the mode. |
 
 ## Known Issues
 
