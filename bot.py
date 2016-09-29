@@ -272,6 +272,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
     async def on_chat_message(self, message):
         if("text" not in message): return
         command, _, payload = message['text'][1:].partition(" ")
+        command = command.split("@")[0]
 
         chat = await self.administrator.getChat()
         self._log("chat: " + message['text'], chat)
