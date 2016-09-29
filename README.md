@@ -3,20 +3,19 @@
 A telegram bot to fetch the latest NTU Hub News and to get live screenshots of campus locations. The bot is currently hosted on Heroku and can be accessed via this [link](http://telegram.me/NTU_CampusBot).
 
 ## Latest Release
-NTU_CampusBot v1.1.0
+NTU_CampusBot v1.2.0
 
 ##### Release Notes
-- Asynchronous message handling
-- Twitter feed subscription feature
-- Shuttle bus route information feature
-- Better logging using tags
-- Admin mode with features
+- Crowd density using MSE image comparison
+- Subscribers are now returned as list of usernames, first names or group chat names
 - Bug fixes
 
 ## Required Dependencies
  - [Beautiful Soup 4](https://www.crummy.com/software/BeautifulSoup/)
  - [Telepot](https://github.com/nickoala/telepot)
  - [Tweepy](https://github.com/tweepy/tweepy)
+ - [scikit-image](http://scikit-image.org/)
+ - [SciPy](https://www.scipy.org/)
 
 ## Development
 You'll need the Heroku CLI if you want to host this bot. For more information on how to install it, check out their [docs](https://devcenter.heroku.com/articles/heroku-command-line).
@@ -66,7 +65,7 @@ $ heroku ps:scale worker=1
 | Commands | Description |
 | -------- | ----------- |
 | **/start** | Returns the welcome message, including disclaimer and other info. |
-| **/peek** | Returns a keyboard of available locations. Clicking on an item will return the current screenshot of the area. |
+| **/peek** | Returns a keyboard of available locations. Clicking on an item will return the current screenshot of the area, and if available, along with the current crowd density. |
 | **/help** | Returns a list of available commands. |
 | **/news** | Returns **5** news items from [NTU News Hub](). |
 | **/about** | Returns information about the bot, including version and authors. |
@@ -80,7 +79,7 @@ $ heroku ps:scale worker=1
 | -------- | ----------- |
 | **/start** | Returns the current status of the bot. Pass the optional parameter *force* to receive the standard **/start** message. |
 | **/broadcast** | Broadcasts a text message to all subscribers. Requires the message. |
-| **/stats** | Returns statistics about the bot including the total times each command has been called and the number of times tweets have been sent out. Command will be omitted from the list if it has never been called before. |
+| **/stats** | Returns statistics about the bot including the total number of times each command has been called and the number of times tweets have been sent out. Command will be omitted from the list if it has never been called before. |
 | **/subscribers** | Returns a list of subscribed user ID's or group chat ID's. Will be changed to include the username/group chat name/first name on the next release. |
 | **/maintenance** | Toggles maintenance mode on/off. Setting maintenance mode on disables standard users from using the bot. Pass the optional paramter *on* OR *off* to specify the mode. |
 
@@ -89,3 +88,6 @@ $ heroku ps:scale worker=1
 1. `Conflict: terminated by other long poll or webhook error`
 
    Check that there is no other instance of the bot is running elsewhere.
+2. Bot seems unresponsive when fetching **/news**?
+
+   NTU Hub News page responds slowly, so you might need to wait a little longer for your news to arrive.
