@@ -29,7 +29,6 @@ NTU_WEBSITE = "http://www.ntu.edu.sg/"
 SHUTTLE_BUS_URL = "has/Transportation/Pages/GettingAroundNTU.aspx"
 NEWS_HUB_URL = "http://news.ntu.edu.sg/Pages/NewsSummary.aspx?Category=news+releases"
 NEWS_COUNT = 5
-HTTP_REQUEST = 60
 
 HELP_MESSAGE = '''
 You can control this bot by sending these commands:
@@ -315,7 +314,7 @@ class NTUCampusBot(telepot.aio.helper.ChatHandler):
         chat = await self.administrator.getChat()
 
         # async fetch the page source so user won't be blocked while this is in progress
-        future = asyncio.ensure_future(self._load_url(NEWS_HUB_URL, HTTP_REQUEST))
+        future = asyncio.ensure_future(self._load_url(NEWS_HUB_URL))
         # set this as callback once the page is ready
         future.add_done_callback(functools.partial(self._send_news, chat))
 
