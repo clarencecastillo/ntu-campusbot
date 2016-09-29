@@ -13,7 +13,7 @@ import asyncio
 import commons
 import functools
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 AUTHORS = ['Clarence', 'Beiyi', 'Yuxin', 'Joel', 'Qixuan']
 LOG_TAG = "bot"
 
