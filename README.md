@@ -87,7 +87,7 @@ $ heroku ps:scale worker=1
 
 1. `Conflict: terminated by other long poll or webhook error`
 
-   Check that there is no other instance of the bot is running elsewhere.
+   Check that there is no other instance of the bot running elsewhere.
 2. Bot seems unresponsive when fetching **/news**?
 
    NTU Hub News page responds slowly, so you might need to wait a little longer for your news to arrive.
