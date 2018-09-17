@@ -83,14 +83,13 @@ MAINTENANCE_MODE_MESSAGE = "NTU_CampusBot is currently under maintenance! We apo
 BUS_SERVICES = {}
 LOCATION_PROFILES = {}
 LOCATIONS = {
-    "Fastfood Level, Admin Cluster": "fastfood",
-    "School of Art, Design and Media": "adm",
+    "Administration Cluster, Fastfood level": "fastfood",
+    "Administration Cluster, Foodcourt": "foodcourt",
     "Lee Wee Nam Library": "lwn-inside",
     "Quad": "quad",
+    "Onestop@SAC": "onestop_sac",
     "Walkway between North and South Spines": "WalkwaybetweenNorthAndSouthSpines",
-    "Canteen B": "canteenB",
-    "Onestop@SAC": "onestop_sac"
-}
+    }
 
 CALLBACK_COMMAND_LOCATION = "location"
 CALLBACK_COMMAND_BUS = "bus"
